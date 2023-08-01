@@ -1,0 +1,111 @@
+1.  users
+   - user_id 
+   - name 
+   - email 
+   - registration_date 
+
+2. codekata
+
+   - codekata_id 
+   - user_id (reference to the user who solved the codekata)
+   - date_completed 
+   - problems_solved 
+
+3.  attendance
+
+   - attendance_id 
+   - user_id (reference to the user who attended)
+   - date 
+
+4. topics
+   - topic_id 
+   - name 
+
+5.  tasks
+   - task_id 
+
+6.  company_drives
+
+   - drive_id 
+   - date 
+   - students_appeared (an array of user_id references who appeared for the drive)
+
+7. mentors
+
+   - mentor_id 
+   - name 
+   - mentees_count 
+
+
+8 topic_task
+   - task_id
+   - topic_id
+   - date_completed
+   - date_assignment
+   - user_id
+     
+
+
+With this database structure in place, you can perform the following queries:
+
+1. Find all the topics and tasks taught in the month of October:
+
+db.topic_task.find({
+    "date_completed": {
+    $gte: ISODate("2023-10-1"),
+    $lte: ISODate("2023-10-31")
+  }
+})
+
+
+2. Find all the company drives that appeared between 15th Oct 2020 and 31st Oct 2020:
+
+db.company_drives.find({
+  "date": {
+    $gte: ISODate("2023-10-15"),
+    $lte: ISODate("2023-10-31")
+  }
+})
+
+
+3. Find all the company drives and students who appeared for the placement:
+
+db.company_drives.aggregate([
+  {
+    $lookup: {
+      from: "users",
+      localField: "students_appeared",
+      foreignField: "user_id",
+      as: "students_info"
+    }
+  }
+])
+
+
+4. Find the number of problems solved by the user in codekata:
+
+db.codekata.aggregate([
+  {
+    $group: {
+      _id: "$user_id",
+      total_problems_solved: { $sum: "$problems_solved" }
+    }
+  }
+])
+
+
+5. Find all the mentors with more than 15 mentees:
+db.mentors.find({ "mentees_count": { $gt: 15 } })
+
+
+6. Find the number of users who were absent and didn't submit a task between 15th Oct 2020 and 31st Oct 2020:
+db.users.count({
+  "_id": {
+    $nin: db.tasks.distinct("user_id", {
+      "date_completed": {
+        $gte: ISODate("2023-10-15"),
+        $lte: ISODate("2023-10-31")
+      }
+    })
+  }
+})
